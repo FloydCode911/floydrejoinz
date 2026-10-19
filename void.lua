@@ -875,6 +875,7 @@ end
 local function inject_roblox_cookie(pkg, cookie)
     pkg = clean_package_name(pkg)
     run_root("am force-stop " .. pkg)
+    os.execute("sleep 3")
 
     local target_paths = {
         "/data/data/" .. pkg .. "/app_webview/Default/Cookies",
@@ -894,6 +895,9 @@ local function inject_roblox_cookie(pkg, cookie)
         end
     end
 
+    run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Cookies-wal")
+    run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-wal")
+
     local sql = "UPDATE cookies SET value = '" .. sanitized .. "' WHERE name = '.ROBLOSECURITY'; " ..
                 "DELETE FROM cookies WHERE name = 'GuestData'; " ..
                 "INSERT OR IGNORE INTO cookies (creation_utc, host_key, top_frame_site_key, name, value, encrypted_value, path, expires_utc, is_secure, is_httponly, last_access_utc, has_expires, is_persistent, priority, samesite, source_port, is_same_party) " ..
@@ -909,6 +913,8 @@ local function inject_roblox_cookie(pkg, cookie)
     run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Cookies-wal")
     run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-wal")
     run_root("chown -R $(stat -c '%u:%g' /data/data/" .. pkg .. ") /data/data/" .. pkg .. "/app_webview")
+    run_root("sync")
+    os.execute("sleep 2")
 end
 
 local function format_timer(seconds)
@@ -918,8 +924,11 @@ local function format_timer(seconds)
 end
 
 local function run_account_shifter(pkgs, interval_minutes, start_idx)
+    os.execute("termux-wake-lock 2>/dev/null")
+
     local cookies = load_cookies()
     if #cookies == 0 then
+        os.execute("termux-wake-unlock 2>/dev/null")
         print_log(CLR_RED .. "\n[!] No valid cookies found in " .. COOKIES_FILE_PATH .. CLR_RESET)
         print_log(CLR_GRAY .. "Please open the file and paste your cookies (one per line)." .. CLR_RESET)
         print_log("\n" .. CLR_GRAY .. "Press Enter to return..." .. CLR_RESET)
@@ -988,7 +997,6 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
         render_shifter_dashboard(current_idx, 0)
         inject_roblox_cookie(target_pkg, cookies[current_idx])
 
-        os.execute("sleep 1.5")
         add_log("Launching Roblox (" .. format_display_pkg(target_pkg) .. ")...")
         render_shifter_dashboard(current_idx, 0)
         launch_roblox_package(target_pkg, target_intent)
@@ -1003,7 +1011,10 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
         end
 
         add_log("Account #" .. string.format("%02d", current_idx) .. " interval finished (" .. interval_minutes .. " mins).")
+        add_log("Stopping Roblox for clean shift...")
+        render_shifter_dashboard(current_idx, interval_seconds)
         run_root("am force-stop " .. target_pkg)
+        os.execute("sleep 3")
         completed_count = completed_count + 1
         current_idx = current_idx + 1
     end
@@ -1012,6 +1023,7 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
     print_header()
     print_log(CLR_GREEN .. "\n[+] All " .. total_accounts .. " accounts processed successfully!" .. CLR_RESET)
     save_shifter_progress(1, interval_minutes)
+    os.execute("termux-wake-unlock 2>/dev/null")
     print_log("\n" .. CLR_GRAY .. "Press Enter to return to menu..." .. CLR_RESET)
     read_clean_input()
 end
