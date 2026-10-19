@@ -11,7 +11,7 @@ if not getgenv().void_notified then
     pcall(function()
         if writefile and isfile and not isfile("void_v3.png") then
             pcall(function()
-                local imgData = game:HttpGet("https://raw.githubusercontent.com/Dhanniii/V-rejoin/main/void_v3.png")
+                local imgData = game:HttpGet("https://raw.githubusercontent.com/FloydCode911/floydrejoinz/main/void_v3.png")
                 writefile("void_v3.png", imgData)
             end)
         end
