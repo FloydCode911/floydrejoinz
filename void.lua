@@ -954,15 +954,6 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
 
     local completed_count = current_idx - 1
 
-    local log_history = {}
-    local function add_log(msg)
-        local time_str = os.date("%H:%M:%S")
-        table.insert(log_history, CLR_GRAY .. "[*] [" .. time_str .. "] " .. CLR_WHITE .. msg .. CLR_RESET)
-        if #log_history > 6 then
-            table.remove(log_history, 1)
-        end
-    end
-
     local function render_shifter_dashboard(account_idx, elapsed_sec)
         clear_screen()
         local ram_str = get_ram_info()
@@ -981,23 +972,15 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
         print_log(CLR_CYAN .. "║ " .. CLR_GRAY .. "Available RAM  : " .. CLR_GREEN .. pad_str(ram_str, 28) .. CLR_CYAN .. "║" .. CLR_RESET)
         print_log(CLR_CYAN .. "╚══════════════════════════════════════════════╝" .. CLR_RESET)
         print_log("")
-
-        for _, l in ipairs(log_history) do
-            print_log(l)
-        end
         io.flush()
     end
-
-    add_log("Starting Shifter queue from Account #" .. string.format("%02d", current_idx))
 
     while current_idx <= total_accounts do
         save_shifter_progress(current_idx, interval_minutes)
 
-        add_log("Injecting cookie for Account #" .. string.format("%02d", current_idx) .. "...")
         render_shifter_dashboard(current_idx, 0)
         inject_roblox_cookie(target_pkg, cookies[current_idx])
 
-        add_log("Launching Roblox (" .. format_display_pkg(target_pkg) .. ")...")
         render_shifter_dashboard(current_idx, 0)
         launch_roblox_package(target_pkg, target_intent)
 
@@ -1010,8 +993,6 @@ local function run_account_shifter(pkgs, interval_minutes, start_idx)
             end
         end
 
-        add_log("Account #" .. string.format("%02d", current_idx) .. " interval finished (" .. interval_minutes .. " mins).")
-        add_log("Stopping Roblox for clean shift...")
         render_shifter_dashboard(current_idx, interval_seconds)
         run_root("am force-stop " .. target_pkg)
         os.execute("sleep 3")
