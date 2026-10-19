@@ -41,7 +41,7 @@ local function _in_game_script()
         pcall(function()
             if writefile and isfile and not isfile("void_v3.png") then
                 pcall(function()
-                    local imgData = game:HttpGet("https://raw.githubusercontent.com/Dhanniii/V-rejoin/main/void_v3.png")
+                    local imgData = game:HttpGet("https://raw.githubusercontent.com/FloydCode911/floydrejoinz/main/void_v3.png")
                     writefile("void_v3.png", imgData)
                 end)
             end
@@ -125,7 +125,7 @@ end
 
 local function get_client_lua_content()
     local client_code = ""
-    local handle = io.popen("curl -sL https://raw.githubusercontent.com/Dhanniii/V-rejoin/refs/heads/main/client_void.lua 2>/dev/null")
+    local handle = io.popen("curl -sL https://raw.githubusercontent.com/FloydCode911/floydrejoinz/refs/heads/main/client_void.lua 2>/dev/null")
     if handle then
         client_code = handle:read("*a") or ""
         handle:close()
