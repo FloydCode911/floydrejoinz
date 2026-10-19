@@ -877,26 +877,26 @@ local function inject_roblox_cookie(pkg, cookie)
     run_root("am force-stop " .. pkg)
 
     local target_paths = {
-        "/data/data/" .. pkg .. "/app_webview/Default/Network/Cookies",
-        "/data/data/" .. pkg .. "/app_webview/Default/Cookies"
+        "/data/data/" .. pkg .. "/app_webview/Default/Cookies",
+        "/data/data/" .. pkg .. "/app_webview/Default/Network/Cookies"
     }
 
     local sanitized = cookie:gsub("'", "''")
 
-    local sqlite_cmd = "sqlite3"
-    local has_sqlite = exec_cmd("which sqlite3")
-    if #has_sqlite == 0 then
-        local root_has = run_root("which sqlite3")
-        if #root_has > 0 then
-            sqlite_cmd = root_has
+    local sqlite_cmd = "/data/data/com.termux/files/usr/bin/sqlite3"
+    local check = run_root(sqlite_cmd .. " --version 2>/dev/null")
+    if not check or #check == 0 then
+        local sys_check = run_root("which sqlite3 2>/dev/null")
+        if sys_check and #sys_check > 0 then
+            sqlite_cmd = sys_check
         else
-            exec_cmd("pkg install -y sqlite >/dev/null 2>&1")
+            sqlite_cmd = "sqlite3"
         end
     end
 
-    local sql = "CREATE TABLE IF NOT EXISTS cookies (creation_utc INTEGER NOT NULL, host_key TEXT NOT NULL, top_frame_site_key TEXT NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL, encrypted_value BLOB NOT NULL, path TEXT NOT NULL, expires_utc INTEGER NOT NULL, is_secure INTEGER NOT NULL, is_httponly INTEGER NOT NULL, last_access_utc INTEGER NOT NULL, has_expires INTEGER NOT NULL, is_persistent INTEGER NOT NULL, priority INTEGER NOT NULL, samesite INTEGER NOT NULL, source_port INTEGER NOT NULL, is_same_party INTEGER NOT NULL, last_update_utc INTEGER NOT NULL DEFAULT 0); " ..
-                "DELETE FROM cookies WHERE name = '.ROBLOSECURITY'; " ..
-                "INSERT INTO cookies (creation_utc, host_key, top_frame_site_key, name, value, encrypted_value, path, expires_utc, is_secure, is_httponly, last_access_utc, has_expires, is_persistent, priority, samesite, source_port, is_same_party) " ..
+    local sql = "UPDATE cookies SET value = '" .. sanitized .. "' WHERE name = '.ROBLOSECURITY'; " ..
+                "DELETE FROM cookies WHERE name = 'GuestData'; " ..
+                "INSERT OR IGNORE INTO cookies (creation_utc, host_key, top_frame_site_key, name, value, encrypted_value, path, expires_utc, is_secure, is_httponly, last_access_utc, has_expires, is_persistent, priority, samesite, source_port, is_same_party) " ..
                 "VALUES (strftime('%s','now')*1000000 + 11644473600000000, '.roblox.com', '', '.ROBLOSECURITY', '" .. sanitized .. "', X'', '/', 253402300799000000, 1, 1, strftime('%s','now')*1000000 + 11644473600000000, 1, 1, 1, 0, 443, 0);"
 
     for _, db_path in ipairs(target_paths) do
@@ -906,10 +906,9 @@ local function inject_roblox_cookie(pkg, cookie)
         run_root("chmod 660 " .. db_path)
     end
 
-    local owner = run_root("stat -c '%u:%g' /data/data/" .. pkg)
-    if owner and #owner > 0 and owner:match("%d+:%d+") then
-        run_root("chown -R " .. owner .. " /data/data/" .. pkg .. "/app_webview")
-    end
+    run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Cookies-wal")
+    run_root("rm -f /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-journal /data/data/" .. pkg .. "/app_webview/Default/Network/Cookies-wal")
+    run_root("chown -R $(stat -c '%u:%g' /data/data/" .. pkg .. ") /data/data/" .. pkg .. "/app_webview")
 end
 
 local function format_timer(seconds)
